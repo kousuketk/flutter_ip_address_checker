@@ -20,5 +20,4 @@ $ flutter devices
 $ flutter run -d emulator-5554
 ```
 
-
-<img width="416" height="737" alt="Screenshot 2025-07-18 at 17 34 42" src="https://github.com/user-attachments/assets/99b15b7e-d6bc-43e7-acf6-c6c6c92bf3b5" />
+<img width="434" height="735" alt="Screenshot 2025-07-22 at 9 42 48" src="https://github.com/user-attachments/assets/b99cf1f3-8345-49a9-8ada-fc42c4ec0532" />
