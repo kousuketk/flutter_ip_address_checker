@@ -108,6 +108,39 @@ class ProxyHelper {
     return null;
   }
 
+  /// Get all environment variables
+  static Map<String, String> getAllEnvironmentVariables() {
+    return Platform.environment;
+  }
+
+  /// Get proxy-related environment variables
+  static Map<String, String> getProxyRelatedEnvironmentVariables() {
+    final allEnv = Platform.environment;
+    final proxyEnv = <String, String>{};
+    
+    for (final entry in allEnv.entries) {
+      final key = entry.key.toUpperCase();
+      if (key.contains('PROXY') || 
+          key.contains('HTTP') || 
+          key.contains('HTTPS') ||
+          key.contains('MAGICPOD')) {
+        proxyEnv[entry.key] = entry.value;
+      }
+    }
+    return proxyEnv;
+  }
+
+  /// Get environment variables summary for display
+  static EnvironmentVariablesInfo getEnvironmentVariablesInfo() {
+    final allEnv = getAllEnvironmentVariables();
+    final proxyEnv = getProxyRelatedEnvironmentVariables();
+    
+    return EnvironmentVariablesInfo(
+      allVariables: allEnv,
+      proxyRelatedVariables: proxyEnv,
+    );
+  }
+
   /// Get proxy settings from environment variables (private method for backward compatibility)
   static ProxyConfig? _getProxyFromEnvironment() {
     return getProxyFromEnvironment();
@@ -276,6 +309,40 @@ class ProxyDetailedInfo {
       buffer.writeln('  MAGICPOD Environment Variables: ${magicpodProxy!.host}:${magicpodProxy!.port}');
     } else {
       buffer.writeln('  MAGICPOD Environment Variables: Not configured');
+    }
+    
+    return buffer.toString();
+  }
+}
+
+/// Class to hold environment variables information
+class EnvironmentVariablesInfo {
+  final Map<String, String> allVariables;
+  final Map<String, String> proxyRelatedVariables;
+
+  const EnvironmentVariablesInfo({
+    required this.allVariables,
+    required this.proxyRelatedVariables,
+  });
+
+  /// Get total count of environment variables
+  int get totalCount => allVariables.length;
+
+  /// Get count of proxy-related environment variables
+  int get proxyRelatedCount => proxyRelatedVariables.length;
+
+  @override
+  String toString() {
+    final buffer = StringBuffer();
+    buffer.writeln('Environment Variables Summary:');
+    buffer.writeln('  Total variables: $totalCount');
+    buffer.writeln('  Proxy-related variables: $proxyRelatedCount');
+    
+    if (proxyRelatedVariables.isNotEmpty) {
+      buffer.writeln('\nProxy-related variables:');
+      for (final entry in proxyRelatedVariables.entries) {
+        buffer.writeln('  ${entry.key} = ${entry.value}');
+      }
     }
     
     return buffer.toString();

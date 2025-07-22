@@ -223,6 +223,189 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
     }
   }
 
+  /// Show environment variables dialog
+  void _showEnvironmentVariables() {
+    final envInfo = HttpService.instance.getEnvironmentVariablesInfo();
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            height: MediaQuery.of(context).size.height * 0.8,
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Environment Variables',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Summary
+                Card(
+                  color: Colors.blue.shade50,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Summary',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text('Total variables: ${envInfo.totalCount}'),
+                        Text('Proxy-related variables: ${envInfo.proxyRelatedCount}'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Proxy-related variables section
+                if (envInfo.proxyRelatedVariables.isNotEmpty) ...[
+                  Text(
+                    'Proxy-Related Variables',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 120,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.orange.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView.builder(
+                      itemCount: envInfo.proxyRelatedVariables.length,
+                      itemBuilder: (context, index) {
+                        final entry = envInfo.proxyRelatedVariables.entries.elementAt(index);
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            border: Border(
+                              bottom: BorderSide(color: Colors.orange.shade200),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                entry.key,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              Text(
+                                entry.value,
+                                style: const TextStyle(fontSize: 12),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                
+                // All variables section
+                Text(
+                  'All Environment Variables',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView.builder(
+                      itemCount: envInfo.allVariables.length,
+                      itemBuilder: (context, index) {
+                        final entry = envInfo.allVariables.entries.elementAt(index);
+                        final isProxyRelated = envInfo.proxyRelatedVariables.containsKey(entry.key);
+                        
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isProxyRelated ? Colors.orange.shade50 : Colors.white,
+                            border: Border(
+                              bottom: BorderSide(color: Colors.grey.shade200),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  if (isProxyRelated)
+                                    Icon(
+                                      Icons.star,
+                                      size: 16,
+                                      color: Colors.orange.shade600,
+                                    ),
+                                  if (isProxyRelated) const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      entry.key,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        color: isProxyRelated ? Colors.orange.shade700 : Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                entry.value,
+                                style: const TextStyle(fontSize: 12),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -378,11 +561,29 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
               ),
               const SizedBox(height: 16),
               
-              // Refresh button
-              ElevatedButton.icon(
-                onPressed: _isLoading ? null : _refreshIPs,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Refresh Both IPs'),
+              // Buttons row
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _refreshIPs,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Refresh Both IPs'),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _showEnvironmentVariables,
+                      icon: const Icon(Icons.list),
+                      label: const Text('Show Environment Variables'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               
