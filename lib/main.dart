@@ -52,6 +52,8 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
   bool _isLoading = false;
   String _errorMessage = '';
   String _proxyInfo = '';
+  String _androidProxyInfo = '';
+  String _environmentProxyInfo = '';
 
   @override
   void initState() {
@@ -68,7 +70,7 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
     try {
       // Initialize HTTP service (including proxy settings)
       await HttpService.instance.initialize();
-      _proxyInfo = HttpService.instance.getProxyInfo();
+      _updateProxyInfo();
       
       // Get both IP address information in parallel
       await Future.wait([
@@ -87,6 +89,26 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
     }
   }
 
+  /// Update proxy information from HttpService
+  void _updateProxyInfo() {
+    _proxyInfo = HttpService.instance.getProxyInfo();
+    
+    final androidProxy = HttpService.instance.getAndroidSystemProxy();
+    final environmentProxy = HttpService.instance.getEnvironmentProxy();
+    
+    if (androidProxy != null) {
+      _androidProxyInfo = 'Android System Proxy: ${androidProxy.host}:${androidProxy.port}';
+    } else {
+      _androidProxyInfo = 'Android System Proxy: Not configured';
+    }
+    
+    if (environmentProxy != null) {
+      _environmentProxyInfo = 'Environment Variables Proxy: ${environmentProxy.host}:${environmentProxy.port}';
+    } else {
+      _environmentProxyInfo = 'Environment Variables Proxy: Not configured';
+    }
+  }
+
   Future<void> _refreshIPs() async {
     setState(() {
       _isLoading = true;
@@ -96,7 +118,7 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
     try {
       // Reload proxy settings
       await HttpService.instance.refreshProxy();
-      _proxyInfo = HttpService.instance.getProxyInfo();
+      _updateProxyInfo();
       
       // Get both IP address information in parallel
       await Future.wait([
@@ -220,8 +242,29 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _proxyInfo,
-                        style: const TextStyle(fontSize: 14),
+                        'Currently in use: $_proxyInfo',
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 12),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Detailed Information:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _androidProxyInfo,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _environmentProxyInfo,
+                        style: const TextStyle(fontSize: 13),
                       ),
                     ],
                   ),

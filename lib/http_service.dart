@@ -9,6 +9,7 @@ class HttpService {
   static HttpService? _instance;
   late http.Client _client;
   ProxyConfig? _proxyConfig;
+  ProxyDetailedInfo? _detailedProxyInfo;
 
   HttpService._internal();
 
@@ -20,8 +21,9 @@ class HttpService {
   /// Initialize HTTP client (including proxy settings)
   Future<void> initialize() async {
     try {
-      // Get proxy configuration
-      _proxyConfig = await ProxyHelper.getSystemProxy();
+      // Get detailed proxy configuration
+      _detailedProxyInfo = await ProxyHelper.getDetailedProxyInfo();
+      _proxyConfig = _detailedProxyInfo?.effectiveProxy;
       
       if (_proxyConfig != null) {
         debugPrint('Proxy configuration found: $_proxyConfig');
@@ -145,6 +147,25 @@ class HttpService {
     } else {
       return 'No proxy configured (direct connection)';
     }
+  }
+
+  /// Get detailed proxy information
+  String getDetailedProxyInfo() {
+    if (_detailedProxyInfo != null) {
+      return _detailedProxyInfo.toString();
+    } else {
+      return 'Proxy information not available';
+    }
+  }
+
+  /// Get Android system proxy information
+  ProxyConfig? getAndroidSystemProxy() {
+    return _detailedProxyInfo?.androidSystemProxy;
+  }
+
+  /// Get environment proxy information
+  ProxyConfig? getEnvironmentProxy() {
+    return _detailedProxyInfo?.environmentProxy;
   }
 
   /// Force reload proxy settings
