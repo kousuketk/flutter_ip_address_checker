@@ -53,7 +53,9 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
   String _errorMessage = '';
   String _proxyInfo = '';
   String _androidProxyInfo = '';
+  String _iosProxyInfo = '';
   String _environmentProxyInfo = '';
+  String _magicpodProxyInfo = '';
 
   @override
   void initState() {
@@ -94,7 +96,9 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
     _proxyInfo = HttpService.instance.getProxyInfo();
     
     final androidProxy = HttpService.instance.getAndroidSystemProxy();
+    final iosProxy = HttpService.instance.getIOSSystemProxy();
     final environmentProxy = HttpService.instance.getEnvironmentProxy();
+    final magicpodProxy = HttpService.instance.getMagicpodProxy();
     
     if (androidProxy != null) {
       _androidProxyInfo = 'Android System Proxy: ${androidProxy.host}:${androidProxy.port}';
@@ -102,10 +106,22 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
       _androidProxyInfo = 'Android System Proxy: Not configured';
     }
     
-    if (environmentProxy != null) {
-      _environmentProxyInfo = 'Environment Variables Proxy: ${environmentProxy.host}:${environmentProxy.port}';
+    if (iosProxy != null) {
+      _iosProxyInfo = 'iOS System Proxy: ${iosProxy.host}:${iosProxy.port}';
     } else {
-      _environmentProxyInfo = 'Environment Variables Proxy: Not configured';
+      _iosProxyInfo = 'iOS System Proxy: Not configured';
+    }
+    
+    if (environmentProxy != null) {
+      _environmentProxyInfo = 'Standard Environment Variables: ${environmentProxy.host}:${environmentProxy.port}';
+    } else {
+      _environmentProxyInfo = 'Standard Environment Variables: Not configured';
+    }
+    
+    if (magicpodProxy != null) {
+      _magicpodProxyInfo = 'MAGICPOD Environment Variables: ${magicpodProxy.host}:${magicpodProxy.port}';
+    } else {
+      _magicpodProxyInfo = 'MAGICPOD Environment Variables: Not configured';
     }
   }
 
@@ -263,7 +279,17 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
                       ),
                       const SizedBox(height: 4),
                       Text(
+                        _iosProxyInfo,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
                         _environmentProxyInfo,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _magicpodProxyInfo,
                         style: const TextStyle(fontSize: 13),
                       ),
                     ],

@@ -23,7 +23,7 @@ class HttpService {
     try {
       // Get detailed proxy configuration
       _detailedProxyInfo = await ProxyHelper.getDetailedProxyInfo();
-      _proxyConfig = _detailedProxyInfo?.effectiveProxy;
+      _proxyConfig = await ProxyHelper.getBestAvailableProxy();
       
       if (_proxyConfig != null) {
         debugPrint('Proxy configuration found: $_proxyConfig');
@@ -163,9 +163,19 @@ class HttpService {
     return _detailedProxyInfo?.androidSystemProxy;
   }
 
-  /// Get environment proxy information
+  /// Get iOS system proxy information
+  ProxyConfig? getIOSSystemProxy() {
+    return _detailedProxyInfo?.iosSystemProxy;
+  }
+
+  /// Get standard environment proxy information
   ProxyConfig? getEnvironmentProxy() {
     return _detailedProxyInfo?.environmentProxy;
+  }
+
+  /// Get MAGICPOD environment proxy information
+  ProxyConfig? getMagicpodProxy() {
+    return _detailedProxyInfo?.magicpodProxy;
   }
 
   /// Force reload proxy settings
