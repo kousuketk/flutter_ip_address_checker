@@ -26,8 +26,7 @@ class ProxyHelper {
       debugPrint('Failed to get system proxy: $e');
     }
 
-    // Fallback: get proxy settings from environment variables
-    return _getProxyFromEnvironment();
+    return null;
   }
 
   /// Get Android system proxy settings only (without fallback)
@@ -114,86 +113,29 @@ class ProxyHelper {
   }
 
 
-  /// Get proxy settings from standard environment variables
-  static ProxyConfig? getProxyFromEnvironment() {
-    final httpProxy = Platform.environment['HTTP_PROXY'] ?? 
-                     Platform.environment['http_proxy'];
-    
-    if (httpProxy != null && httpProxy.isNotEmpty) {
-      final uri = Uri.tryParse(httpProxy);
-      if (uri != null && uri.host.isNotEmpty && uri.port > 0) {
-        return ProxyConfig(host: uri.host, port: uri.port, source: 'Standard Environment Variables');
-      }
-    }
-    
-    return null;
-  }
-
-
-
-  /// Get proxy-related environment variables
-  static Map<String, String> getProxyRelatedEnvironmentVariables() {
-    final allEnv = Platform.environment;
-    final proxyEnv = <String, String>{};
-    
-    for (final entry in allEnv.entries) {
-      final key = entry.key.toUpperCase();
-      if (key.contains('PROXY') || 
-          key.contains('HTTP') || 
-          key.contains('HTTPS') ||
-          key.contains('MAGICPOD')) {
-        proxyEnv[entry.key] = entry.value;
-      }
-    }
-    return proxyEnv;
-  }
-
-  /// Get environment variables summary for display
-  static EnvironmentVariablesInfo getEnvironmentVariablesInfo() {
-    final allEnv = Platform.environment;
-    final proxyEnv = getProxyRelatedEnvironmentVariables();
-    
-    return EnvironmentVariablesInfo(
-      allVariables: allEnv,
-      proxyRelatedVariables: proxyEnv,
-    );
-  }
-
-  /// Get proxy settings from environment variables (private method for backward compatibility)
-  static ProxyConfig? _getProxyFromEnvironment() {
-    return getProxyFromEnvironment();
-  }
-
   /// Get detailed proxy information from all sources
   static Future<ProxyDetailedInfo> getDetailedProxyInfo() async {
     final androidProxy = await getAndroidSystemProxy();
     final iosProxy = await getIOSSystemProxy();
-    final envProxy = getProxyFromEnvironment();
     
     return ProxyDetailedInfo(
       androidSystemProxy: androidProxy,
       iosSystemProxy: iosProxy,
-      environmentProxy: envProxy,
+      environmentProxy: null,
     );
   }
 
   /// Get the best available proxy configuration based on platform priority
   static Future<ProxyConfig?> getBestAvailableProxy() async {
     if (Platform.isAndroid) {
-      // Android priority: System → Standard Env
-      final androidProxy = await getAndroidSystemProxy();
-      if (androidProxy != null) return androidProxy;
-      
-      return getProxyFromEnvironment();
+      // Android priority: System only
+      return await getAndroidSystemProxy();
     } else if (Platform.isIOS) {
-      // iOS priority: System → Standard Env
-      final iosProxy = await getIOSSystemProxy();
-      if (iosProxy != null) return iosProxy;
-      
-      return getProxyFromEnvironment();
+      // iOS priority: System only
+      return await getIOSSystemProxy();
     } else {
-      // Other platforms: Standard Env only
-      return getProxyFromEnvironment();
+      // Other platforms: No proxy
+      return null;
     }
   }
 
@@ -430,40 +372,6 @@ class NSURLSessionProxyInfo {
       buffer.writeln('  All Proxy Settings:');
       for (final entry in allProxySettings!.entries) {
         buffer.writeln('    ${entry.key}: ${entry.value}');
-      }
-    }
-    
-    return buffer.toString();
-  }
-}
-
-/// Class to hold environment variables information
-class EnvironmentVariablesInfo {
-  final Map<String, String> allVariables;
-  final Map<String, String> proxyRelatedVariables;
-
-  const EnvironmentVariablesInfo({
-    required this.allVariables,
-    required this.proxyRelatedVariables,
-  });
-
-  /// Get total count of environment variables
-  int get totalCount => allVariables.length;
-
-  /// Get count of proxy-related environment variables
-  int get proxyRelatedCount => proxyRelatedVariables.length;
-
-  @override
-  String toString() {
-    final buffer = StringBuffer();
-    buffer.writeln('Environment Variables Summary:');
-    buffer.writeln('  Total variables: $totalCount');
-    buffer.writeln('  Proxy-related variables: $proxyRelatedCount');
-    
-    if (proxyRelatedVariables.isNotEmpty) {
-      buffer.writeln('\nProxy-related variables:');
-      for (final entry in proxyRelatedVariables.entries) {
-        buffer.writeln('  ${entry.key} = ${entry.value}');
       }
     }
     

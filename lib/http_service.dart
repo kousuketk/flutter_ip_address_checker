@@ -208,22 +208,6 @@ class HttpService {
     return _detailedProxyInfo?.iosSystemProxy;
   }
 
-  /// Get standard environment proxy information
-  ProxyConfig? getEnvironmentProxy() {
-    return _detailedProxyInfo?.environmentProxy;
-  }
-
-
-  /// Get environment variables information
-  EnvironmentVariablesInfo getEnvironmentVariablesInfo() {
-    return ProxyHelper.getEnvironmentVariablesInfo();
-  }
-
-
-  /// Get proxy-related environment variables
-  Map<String, String> getProxyRelatedEnvironmentVariables() {
-    return ProxyHelper.getProxyRelatedEnvironmentVariables();
-  }
 
   /// Force reload proxy settings
   Future<void> refreshProxy() async {
