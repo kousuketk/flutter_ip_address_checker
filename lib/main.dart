@@ -57,7 +57,6 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
   String _androidProxyInfo = '';
   String _iosProxyInfo = '';
   String _environmentProxyInfo = '';
-  String _magicpodProxyInfo = '';
 
   @override
   void initState() {
@@ -100,8 +99,6 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
     final androidProxy = HttpService.instance.getAndroidSystemProxy();
     final iosProxy = HttpService.instance.getIOSSystemProxy();
     final environmentProxy = HttpService.instance.getEnvironmentProxy();
-    final magicpodProxy = HttpService.instance.getMagicpodProxy();
-    
     if (androidProxy != null) {
       _androidProxyInfo = 'Android System Proxy: ${androidProxy.host}:${androidProxy.port}';
     } else {
@@ -118,12 +115,6 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
       _environmentProxyInfo = 'Standard Environment Variables: ${environmentProxy.host}:${environmentProxy.port}';
     } else {
       _environmentProxyInfo = 'Standard Environment Variables: Not configured';
-    }
-    
-    if (magicpodProxy != null) {
-      _magicpodProxyInfo = 'MAGICPOD Environment Variables: ${magicpodProxy.host}:${magicpodProxy.port}';
-    } else {
-      _magicpodProxyInfo = 'MAGICPOD Environment Variables: Not configured';
     }
   }
 
@@ -699,11 +690,6 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
                       const SizedBox(height: 4),
                       Text(
                         _environmentProxyInfo,
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _magicpodProxyInfo,
                         style: const TextStyle(fontSize: 13),
                       ),
                     ],

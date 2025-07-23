@@ -130,25 +130,7 @@ class ProxyHelper {
     return null;
   }
 
-  /// Get proxy settings from MAGICPOD environment variables (iOS specific)
-  static ProxyConfig? getMagicpodProxyFromEnvironment() {
-    final host = Platform.environment['MAGICPOD_DYLIB_PROXY_HOST'];
-    final portStr = Platform.environment['MAGICPOD_DYLIB_PROXY_PORT'];
-    
-    if (host != null && host.isNotEmpty && portStr != null && portStr.isNotEmpty) {
-      final port = int.tryParse(portStr);
-      if (port != null && port > 0) {
-        return ProxyConfig(host: host, port: port, source: 'MAGICPOD Environment Variables');
-      }
-    }
-    
-    return null;
-  }
 
-  /// Get all environment variables
-  static Map<String, String> getAllEnvironmentVariables() {
-    return Platform.environment;
-  }
 
   /// Get proxy-related environment variables
   static Map<String, String> getProxyRelatedEnvironmentVariables() {
@@ -169,7 +151,7 @@ class ProxyHelper {
 
   /// Get environment variables summary for display
   static EnvironmentVariablesInfo getEnvironmentVariablesInfo() {
-    final allEnv = getAllEnvironmentVariables();
+    final allEnv = Platform.environment;
     final proxyEnv = getProxyRelatedEnvironmentVariables();
     
     return EnvironmentVariablesInfo(
@@ -188,34 +170,26 @@ class ProxyHelper {
     final androidProxy = await getAndroidSystemProxy();
     final iosProxy = await getIOSSystemProxy();
     final envProxy = getProxyFromEnvironment();
-    final magicpodProxy = getMagicpodProxyFromEnvironment();
     
     return ProxyDetailedInfo(
       androidSystemProxy: androidProxy,
       iosSystemProxy: iosProxy,
       environmentProxy: envProxy,
-      magicpodProxy: magicpodProxy,
     );
   }
 
   /// Get the best available proxy configuration based on platform priority
   static Future<ProxyConfig?> getBestAvailableProxy() async {
     if (Platform.isAndroid) {
-      // Android priority: System → Standard Env → MAGICPOD Env
+      // Android priority: System → Standard Env
       final androidProxy = await getAndroidSystemProxy();
       if (androidProxy != null) return androidProxy;
       
-      final envProxy = getProxyFromEnvironment();
-      if (envProxy != null) return envProxy;
-      
-      return getMagicpodProxyFromEnvironment();
+      return getProxyFromEnvironment();
     } else if (Platform.isIOS) {
-      // iOS priority: System → MAGICPOD Env → Standard Env
+      // iOS priority: System → Standard Env
       final iosProxy = await getIOSSystemProxy();
       if (iosProxy != null) return iosProxy;
-      
-      final magicpodProxy = getMagicpodProxyFromEnvironment();
-      if (magicpodProxy != null) return magicpodProxy;
       
       return getProxyFromEnvironment();
     } else {
@@ -294,21 +268,19 @@ class ProxyDetailedInfo {
   final ProxyConfig? androidSystemProxy;
   final ProxyConfig? iosSystemProxy;
   final ProxyConfig? environmentProxy;
-  final ProxyConfig? magicpodProxy;
 
   const ProxyDetailedInfo({
     this.androidSystemProxy,
     this.iosSystemProxy,
     this.environmentProxy,
-    this.magicpodProxy,
   });
 
   /// Get the effective proxy configuration based on platform priority
   ProxyConfig? get effectiveProxy {
     if (Platform.isAndroid) {
-      return androidSystemProxy ?? environmentProxy ?? magicpodProxy;
+      return androidSystemProxy ?? environmentProxy;
     } else if (Platform.isIOS) {
-      return iosSystemProxy ?? magicpodProxy ?? environmentProxy;
+      return iosSystemProxy ?? environmentProxy;
     } else {
       return environmentProxy;
     }
@@ -316,7 +288,7 @@ class ProxyDetailedInfo {
 
   /// Check if any proxy is configured
   bool get hasProxy {
-    return androidSystemProxy != null || iosSystemProxy != null || environmentProxy != null || magicpodProxy != null;
+    return androidSystemProxy != null || iosSystemProxy != null || environmentProxy != null;
   }
 
   @override
@@ -340,12 +312,6 @@ class ProxyDetailedInfo {
       buffer.writeln('  Standard Environment Variables: ${environmentProxy!.host}:${environmentProxy!.port}');
     } else {
       buffer.writeln('  Standard Environment Variables: Not configured');
-    }
-    
-    if (magicpodProxy != null) {
-      buffer.writeln('  MAGICPOD Environment Variables: ${magicpodProxy!.host}:${magicpodProxy!.port}');
-    } else {
-      buffer.writeln('  MAGICPOD Environment Variables: Not configured');
     }
     
     return buffer.toString();

@@ -173,20 +173,12 @@ class HttpService {
     return _detailedProxyInfo?.environmentProxy;
   }
 
-  /// Get MAGICPOD environment proxy information
-  ProxyConfig? getMagicpodProxy() {
-    return _detailedProxyInfo?.magicpodProxy;
-  }
 
   /// Get environment variables information
   EnvironmentVariablesInfo getEnvironmentVariablesInfo() {
     return ProxyHelper.getEnvironmentVariablesInfo();
   }
 
-  /// Get all environment variables
-  Map<String, String> getAllEnvironmentVariables() {
-    return ProxyHelper.getAllEnvironmentVariables();
-  }
 
   /// Get proxy-related environment variables
   Map<String, String> getProxyRelatedEnvironmentVariables() {
