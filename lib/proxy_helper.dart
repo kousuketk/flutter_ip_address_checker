@@ -78,6 +78,43 @@ class ProxyHelper {
     return null;
   }
 
+  /// Get detailed CFNetwork proxy settings (iOS only)
+  static Future<Map<String, String>?> getCFNetworkProxyDetails() async {
+    if (!Platform.isIOS) {
+      return null;
+    }
+
+    try {
+      final result = await _channel.invokeMethod('getSystemProxyDetails');
+      if (result != null && result is Map) {
+        return Map<String, String>.from(result);
+      }
+    } catch (e) {
+      debugPrint('Failed to get CFNetwork proxy details: $e');
+    }
+
+    return null;
+  }
+
+  /// Get NSURLSessionConfiguration proxy settings (iOS only)
+  static Future<NSURLSessionProxyInfo?> getNSURLSessionProxy() async {
+    if (!Platform.isIOS) {
+      return null;
+    }
+
+    try {
+      final result = await _channel.invokeMethod('getNSURLSessionProxy');
+      if (result != null && result is Map) {
+        return NSURLSessionProxyInfo.fromMap(result);
+      }
+    } catch (e) {
+      debugPrint('Failed to get NSURLSession proxy: $e');
+    }
+
+    return null;
+  }
+
+
   /// Get proxy settings from standard environment variables
   static ProxyConfig? getProxyFromEnvironment() {
     final httpProxy = Platform.environment['HTTP_PROXY'] ?? 
@@ -309,6 +346,110 @@ class ProxyDetailedInfo {
       buffer.writeln('  MAGICPOD Environment Variables: ${magicpodProxy!.host}:${magicpodProxy!.port}');
     } else {
       buffer.writeln('  MAGICPOD Environment Variables: Not configured');
+    }
+    
+    return buffer.toString();
+  }
+}
+
+/// Class to hold NSURLSessionConfiguration proxy information (iOS only)
+class NSURLSessionProxyInfo {
+  final String? host;
+  final int? port;
+  final String? httpsHost;
+  final int? httpsPort;
+  final String? type;
+  final String? message;
+  final String source;
+  final Map<String, String>? allProxySettings;
+  final bool allowsCellularAccess;
+  final bool allowsConstrainedNetworkAccess;
+  final bool allowsExpensiveNetworkAccess;
+
+  const NSURLSessionProxyInfo({
+    this.host,
+    this.port,
+    this.httpsHost,
+    this.httpsPort,
+    this.type,
+    this.message,
+    required this.source,
+    this.allProxySettings,
+    required this.allowsCellularAccess,
+    required this.allowsConstrainedNetworkAccess,
+    required this.allowsExpensiveNetworkAccess,
+  });
+
+  factory NSURLSessionProxyInfo.fromMap(Map<dynamic, dynamic> map) {
+    // Helper function to safely convert to bool, handling string values for iOS < 13.0
+    bool safeBoolConversion(dynamic value, bool defaultValue) {
+      if (value is bool) return value;
+      if (value is String) {
+        if (value.contains('Not available')) return defaultValue;
+        return value.toLowerCase() == 'true';
+      }
+      return defaultValue;
+    }
+
+    return NSURLSessionProxyInfo(
+      host: map['host'] as String?,
+      port: map['port'] as int?,
+      httpsHost: map['httpsHost'] as String?,
+      httpsPort: map['httpsPort'] as int?,
+      type: map['type'] as String?,
+      message: map['message'] as String?,
+      source: map['source'] as String? ?? 'NSURLSessionConfiguration',
+      allProxySettings: map['allProxySettings'] != null 
+          ? Map<String, String>.from(map['allProxySettings'] as Map)
+          : null,
+      allowsCellularAccess: safeBoolConversion(map['allowsCellularAccess'], false),
+      allowsConstrainedNetworkAccess: safeBoolConversion(map['allowsConstrainedNetworkAccess'], false),
+      allowsExpensiveNetworkAccess: safeBoolConversion(map['allowsExpensiveNetworkAccess'], false),
+    );
+  }
+
+  /// Check if proxy is configured
+  bool get hasProxy => host != null && port != null;
+
+  /// Get proxy configuration as ProxyConfig if available
+  ProxyConfig? get asProxyConfig {
+    if (hasProxy) {
+      return ProxyConfig(
+        host: host!,
+        port: port!,
+        source: 'NSURLSessionConfiguration',
+      );
+    }
+    return null;
+  }
+
+  @override
+  String toString() {
+    final buffer = StringBuffer();
+    buffer.writeln('NSURLSessionConfiguration Proxy Info:');
+    buffer.writeln('  Source: $source');
+    
+    if (hasProxy) {
+      buffer.writeln('  HTTP Proxy: $host:$port');
+      if (type != null) buffer.writeln('  Type: $type');
+      
+      if (httpsHost != null && httpsPort != null) {
+        buffer.writeln('  HTTPS Proxy: $httpsHost:$httpsPort');
+      }
+    } else {
+      buffer.writeln('  Status: ${message ?? "No proxy configured"}');
+    }
+    
+    buffer.writeln('  Network Access:');
+    buffer.writeln('    Cellular: $allowsCellularAccess');
+    buffer.writeln('    Constrained: $allowsConstrainedNetworkAccess');
+    buffer.writeln('    Expensive: $allowsExpensiveNetworkAccess');
+    
+    if (allProxySettings != null && allProxySettings!.isNotEmpty) {
+      buffer.writeln('  All Proxy Settings:');
+      for (final entry in allProxySettings!.entries) {
+        buffer.writeln('    ${entry.key}: ${entry.value}');
+      }
     }
     
     return buffer.toString();
