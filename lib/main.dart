@@ -106,9 +106,9 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
     }
     
     if (iosProxy != null) {
-      _iosProxyInfo = 'iOS System Proxy: ${iosProxy.host}:${iosProxy.port}';
+      _iosProxyInfo = 'iOS NSURLSessionConfiguration: ${iosProxy.host}:${iosProxy.port}';
     } else {
-      _iosProxyInfo = 'iOS System Proxy: Not configured';
+      _iosProxyInfo = 'iOS NSURLSessionConfiguration: Not configured';
     }
     
     if (environmentProxy != null) {
@@ -152,6 +152,10 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
       // Get IP address via proxy
       final response = await HttpService.instance.get('http://ip-api.com/json/');
       
+      debugPrint('Proxy IP API Response:');
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+      
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
@@ -189,6 +193,10 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
         Uri.parse('http://ip-api.com/json/'),
         headers: {'Accept': 'application/json'},
       ).timeout(const Duration(seconds: 30));
+      
+      debugPrint('Direct IP API Response:');
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -488,10 +496,10 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
                     const SizedBox(height: 16),
                   ],
                   
-                  // Proxy Settings Details
-                  if (nsUrlSessionInfo?.allProxySettings != null && nsUrlSessionInfo!.allProxySettings!.isNotEmpty) ...[
+                  // Proxy Settings Details - Use new connectionProxyDictionary
+                  if (nsUrlSessionInfo?.connectionProxyDictionary != null && nsUrlSessionInfo!.connectionProxyDictionary!.isNotEmpty) ...[
                     Text(
-                      'All Proxy Settings (connectionProxyDictionary)',
+                      'Proxy Settings (connectionProxyDictionary) - ${nsUrlSessionInfo.proxyDictionaryCount} entries',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -499,18 +507,22 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
                     const SizedBox(height: 8),
                     
                     Expanded(
+                      flex: 1,
                       child: Container(
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey.shade300),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: ListView.builder(
-                          itemCount: nsUrlSessionInfo!.allProxySettings!.length,
+                          itemCount: nsUrlSessionInfo!.connectionProxyDictionary!.length,
                           itemBuilder: (context, index) {
-                            final entry = nsUrlSessionInfo.allProxySettings!.entries.elementAt(index);
+                            final entry = nsUrlSessionInfo.connectionProxyDictionary!.entries.elementAt(index);
                             final isProxyRelated = entry.key.toUpperCase().contains('PROXY') ||
                                                  entry.key.toUpperCase().contains('HTTP') ||
-                                                 entry.key.toUpperCase().contains('ENABLE');
+                                                 entry.key.toUpperCase().contains('ENABLE') ||
+                                                 entry.key.toUpperCase().contains('AUTH') ||
+                                                 entry.key.toUpperCase().contains('USER') ||
+                                                 entry.key.toUpperCase().contains('PASS');
                             
                             return Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -542,11 +554,26 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
                                           ),
                                         ),
                                       ),
+                                      // Show data type
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade200,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          entry.value.runtimeType.toString(),
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                   const SizedBox(height: 2),
                                   SelectableText(
-                                    entry.value,
+                                    entry.value.toString(),
                                     style: const TextStyle(fontSize: 12),
                                   ),
                                 ],
@@ -556,7 +583,122 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
                         ),
                       ),
                     ),
-                  ] else ...[
+                    const SizedBox(height: 16),
+                  ],
+                  
+                  // HTTP Additional Headers
+                  if (nsUrlSessionInfo?.httpAdditionalHeaders != null && nsUrlSessionInfo!.httpAdditionalHeaders!.isNotEmpty) ...[
+                    Text(
+                      'HTTP Additional Headers - ${nsUrlSessionInfo.httpAdditionalHeadersCount} entries',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.green.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: ListView.builder(
+                          itemCount: nsUrlSessionInfo!.httpAdditionalHeaders!.length,
+                          itemBuilder: (context, index) {
+                            final entry = nsUrlSessionInfo.httpAdditionalHeaders!.entries.elementAt(index);
+                            final isAuthRelated = entry.key.toUpperCase().contains('AUTH') ||
+                                                entry.key.toUpperCase().contains('PROXY') ||
+                                                entry.key.toUpperCase().contains('USER') ||
+                                                entry.key.toUpperCase().contains('PASS') ||
+                                                entry.key.toUpperCase().contains('BASIC');
+                            
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isAuthRelated ? Colors.green.shade50 : Colors.white,
+                                border: Border(
+                                  bottom: BorderSide(color: Colors.green.shade200),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      if (isAuthRelated)
+                                        Icon(
+                                          Icons.security,
+                                          size: 16,
+                                          color: Colors.green.shade600,
+                                        ),
+                                      if (isAuthRelated) const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          entry.key,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                            color: isAuthRelated ? Colors.green.shade700 : Colors.black,
+                                          ),
+                                        ),
+                                      ),
+                                      // Show data type
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade200,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          entry.value.runtimeType.toString(),
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  SelectableText(
+                                    entry.value.toString(),
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ] else if (nsUrlSessionInfo != null) ...[
+                    Text(
+                      'HTTP Additional Headers - 0 entries',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.green.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.green.shade50,
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'No HTTP additional headers configured',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    ),
+                  ],
+                  
+                  if (nsUrlSessionInfo?.connectionProxyDictionary == null || nsUrlSessionInfo!.connectionProxyDictionary!.isEmpty) ...[
                     Expanded(
                       child: Center(
                         child: Text(

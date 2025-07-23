@@ -121,34 +121,27 @@ import Foundation
     
     // Check if connectionProxyDictionary exists
     if let proxyDict = defaultConfig.connectionProxyDictionary {
-      print("iOS NSURLSession Debug: Found connectionProxyDictionary with \(proxyDict.count) keys")
-      
-      // Convert proxy dictionary to string representation for debugging
-      var proxyDetails: [String: String] = [:]
+      // Convert all proxy dictionary entries to string representation
+      var allProxySettings: [String: Any] = [:]
       for (key, value) in proxyDict {
         let keyStr = String(describing: key)
-        let valueStr = String(describing: value)
-        proxyDetails[keyStr] = valueStr
-        print("iOS NSURLSession Debug: \(keyStr) = \(valueStr)")
+        allProxySettings[keyStr] = value
       }
       
-      // Try to extract HTTP proxy information
+      // Try to extract HTTP proxy information for backward compatibility
       if let httpProxy = proxyDict[kCFNetworkProxiesHTTPProxy] as? String,
          let httpPort = proxyDict[kCFNetworkProxiesHTTPPort] as? Int {
-        print("iOS NSURLSession Debug: Found HTTP proxy: \(httpProxy):\(httpPort)")
         proxyInfo["host"] = httpProxy
         proxyInfo["port"] = httpPort
         proxyInfo["type"] = "HTTP"
       }
       
       // Try to extract HTTPS proxy information (if available)
-      // Note: kCFNetworkProxiesHTTPSProxy may not be available in all iOS versions
       let httpsProxyKey = "HTTPSProxy"
       let httpsPortKey = "HTTPSPort"
       
       if let httpsProxy = proxyDict[httpsProxyKey] as? String,
          let httpsPort = proxyDict[httpsPortKey] as? Int {
-        print("iOS NSURLSession Debug: Found HTTPS proxy: \(httpsProxy):\(httpsPort)")
         if proxyInfo["host"] == nil {
           proxyInfo["host"] = httpsProxy
           proxyInfo["port"] = httpsPort
@@ -159,14 +152,16 @@ import Foundation
         }
       }
       
-      // Add all proxy details for debugging
-      proxyInfo["allProxySettings"] = proxyDetails
+      // Add all proxy settings (this is the main addition)
+      proxyInfo["connectionProxyDictionary"] = allProxySettings
+      proxyInfo["proxyDictionaryCount"] = proxyDict.count
       proxyInfo["source"] = "NSURLSessionConfiguration"
       
     } else {
-      print("iOS NSURLSession Debug: No connectionProxyDictionary found")
       proxyInfo["source"] = "NSURLSessionConfiguration"
       proxyInfo["message"] = "No proxy configuration found"
+      proxyInfo["connectionProxyDictionary"] = [:]
+      proxyInfo["proxyDictionaryCount"] = 0
     }
     
     // Also check other configuration properties
@@ -179,6 +174,20 @@ import Foundation
     } else {
       proxyInfo["allowsConstrainedNetworkAccess"] = "Not available (iOS 13.0+)"
       proxyInfo["allowsExpensiveNetworkAccess"] = "Not available (iOS 13.0+)"
+    }
+    
+    // Get HTTPAdditionalHeaders
+    if let additionalHeaders = defaultConfig.httpAdditionalHeaders {
+      var httpHeaders: [String: Any] = [:]
+      for (key, value) in additionalHeaders {
+        let keyStr = String(describing: key)
+        httpHeaders[keyStr] = value
+      }
+      proxyInfo["httpAdditionalHeaders"] = httpHeaders
+      proxyInfo["httpAdditionalHeadersCount"] = additionalHeaders.count
+    } else {
+      proxyInfo["httpAdditionalHeaders"] = [:]
+      proxyInfo["httpAdditionalHeadersCount"] = 0
     }
     
     result(proxyInfo)

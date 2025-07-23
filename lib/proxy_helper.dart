@@ -61,18 +61,17 @@ class ProxyHelper {
     }
 
     try {
-      // Get iOS-specific proxy settings
-      final result = await _channel.invokeMethod('getSystemProxy');
-      if (result != null && result is Map) {
-        final host = result['host'] as String?;
-        final port = result['port'] as int?;
-        
-        if (host != null && port != null) {
-          return ProxyConfig(host: host, port: port, source: 'iOS System');
-        }
+      // Get iOS-specific proxy settings from NSURLSessionConfiguration
+      final nsUrlSessionInfo = await getNSURLSessionProxy();
+      if (nsUrlSessionInfo != null && nsUrlSessionInfo.hasProxy) {
+        return ProxyConfig(
+          host: nsUrlSessionInfo.host!,
+          port: nsUrlSessionInfo.port!,
+          source: 'iOS NSURLSessionConfiguration',
+        );
       }
     } catch (e) {
-      debugPrint('Failed to get iOS system proxy: $e');
+      debugPrint('Failed to get iOS NSURLSession proxy: $e');
     }
 
     return null;
@@ -303,9 +302,9 @@ class ProxyDetailedInfo {
     }
     
     if (iosSystemProxy != null) {
-      buffer.writeln('  iOS System: ${iosSystemProxy!.host}:${iosSystemProxy!.port}');
+      buffer.writeln('  iOS NSURLSessionConfiguration: ${iosSystemProxy!.host}:${iosSystemProxy!.port}');
     } else {
-      buffer.writeln('  iOS System: Not configured');
+      buffer.writeln('  iOS NSURLSessionConfiguration: Not configured');
     }
     
     if (environmentProxy != null) {
@@ -327,7 +326,11 @@ class NSURLSessionProxyInfo {
   final String? type;
   final String? message;
   final String source;
-  final Map<String, String>? allProxySettings;
+  final Map<String, String>? allProxySettings; // Deprecated, use connectionProxyDictionary
+  final Map<String, dynamic>? connectionProxyDictionary; // New: Full proxy dictionary
+  final int proxyDictionaryCount;
+  final Map<String, dynamic>? httpAdditionalHeaders; // New: HTTP additional headers
+  final int httpAdditionalHeadersCount;
   final bool allowsCellularAccess;
   final bool allowsConstrainedNetworkAccess;
   final bool allowsExpensiveNetworkAccess;
@@ -341,6 +344,10 @@ class NSURLSessionProxyInfo {
     this.message,
     required this.source,
     this.allProxySettings,
+    this.connectionProxyDictionary,
+    required this.proxyDictionaryCount,
+    this.httpAdditionalHeaders,
+    required this.httpAdditionalHeadersCount,
     required this.allowsCellularAccess,
     required this.allowsConstrainedNetworkAccess,
     required this.allowsExpensiveNetworkAccess,
@@ -368,6 +375,14 @@ class NSURLSessionProxyInfo {
       allProxySettings: map['allProxySettings'] != null 
           ? Map<String, String>.from(map['allProxySettings'] as Map)
           : null,
+      connectionProxyDictionary: map['connectionProxyDictionary'] != null
+          ? Map<String, dynamic>.from(map['connectionProxyDictionary'] as Map)
+          : null,
+      proxyDictionaryCount: map['proxyDictionaryCount'] as int? ?? 0,
+      httpAdditionalHeaders: map['httpAdditionalHeaders'] != null
+          ? Map<String, dynamic>.from(map['httpAdditionalHeaders'] as Map)
+          : null,
+      httpAdditionalHeadersCount: map['httpAdditionalHeadersCount'] as int? ?? 0,
       allowsCellularAccess: safeBoolConversion(map['allowsCellularAccess'], false),
       allowsConstrainedNetworkAccess: safeBoolConversion(map['allowsConstrainedNetworkAccess'], false),
       allowsExpensiveNetworkAccess: safeBoolConversion(map['allowsExpensiveNetworkAccess'], false),

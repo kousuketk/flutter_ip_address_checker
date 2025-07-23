@@ -10,6 +10,7 @@ class HttpService {
   late http.Client _client;
   ProxyConfig? _proxyConfig;
   ProxyDetailedInfo? _detailedProxyInfo;
+  NSURLSessionProxyInfo? _nsUrlSessionInfo;
 
   HttpService._internal();
 
@@ -24,6 +25,12 @@ class HttpService {
       // Get detailed proxy configuration
       _detailedProxyInfo = await ProxyHelper.getDetailedProxyInfo();
       _proxyConfig = await ProxyHelper.getBestAvailableProxy();
+      
+      // Get NSURLSession configuration for iOS (including httpAdditionalHeaders)
+      if (Platform.isIOS) {
+        _nsUrlSessionInfo = await ProxyHelper.getNSURLSessionProxy();
+        debugPrint('NSURLSession info retrieved: ${_nsUrlSessionInfo?.httpAdditionalHeadersCount ?? 0} additional headers');
+      }
       
       if (_proxyConfig != null) {
         debugPrint('Proxy configuration found: $_proxyConfig');
@@ -95,9 +102,12 @@ class HttpService {
         debugPrint('Using proxy: $_proxyConfig');
       }
       
+      // Merge provided headers with httpAdditionalHeaders from NSURLSession
+      final finalHeaders = _mergeHeaders(headers ?? {'Accept': 'application/json'});
+      
       final response = await _client.get(
         Uri.parse(url),
-        headers: headers ?? {'Accept': 'application/json'},
+        headers: finalHeaders,
       ).timeout(const Duration(seconds: 30));
       
       debugPrint('Response status: ${response.statusCode}');
@@ -120,9 +130,12 @@ class HttpService {
         debugPrint('Using proxy: $_proxyConfig');
       }
       
+      // Merge provided headers with httpAdditionalHeaders from NSURLSession
+      final finalHeaders = _mergeHeaders(headers ?? {'Accept': 'application/json'});
+      
       final response = await _client.post(
         Uri.parse(url),
-        headers: headers ?? {'Accept': 'application/json'},
+        headers: finalHeaders,
         body: body,
         encoding: encoding,
       ).timeout(const Duration(seconds: 30));
@@ -133,6 +146,33 @@ class HttpService {
       debugPrint('HTTP POST error: $e');
       rethrow;
     }
+  }
+
+  /// Merge provided headers with httpAdditionalHeaders from NSURLSession
+  Map<String, String> _mergeHeaders(Map<String, String> providedHeaders) {
+    final mergedHeaders = Map<String, String>.from(providedHeaders);
+    
+    // Add httpAdditionalHeaders from NSURLSession (iOS only)
+    if (Platform.isIOS && _nsUrlSessionInfo?.httpAdditionalHeaders != null) {
+      final additionalHeaders = _nsUrlSessionInfo!.httpAdditionalHeaders!;
+      
+      debugPrint('Adding ${additionalHeaders.length} additional headers from NSURLSession:');
+      for (final entry in additionalHeaders.entries) {
+        final key = entry.key;
+        final value = entry.value.toString();
+        
+        // Only add if not already present (provided headers take precedence)
+        if (!mergedHeaders.containsKey(key)) {
+          mergedHeaders[key] = value;
+          debugPrint('  Added header: $key = $value');
+        } else {
+          debugPrint('  Skipped header (already exists): $key');
+        }
+      }
+    }
+    
+    debugPrint('Final headers count: ${mergedHeaders.length}');
+    return mergedHeaders;
   }
 
   /// Release resources
