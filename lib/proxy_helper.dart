@@ -5,30 +5,6 @@ import 'package:flutter/services.dart';
 class ProxyHelper {
   static const MethodChannel _channel = MethodChannel('proxy_helper');
 
-  /// Get Android system proxy settings
-  static Future<ProxyConfig?> getSystemProxy() async {
-    if (!Platform.isAndroid) {
-      return null;
-    }
-
-    try {
-      // Get Android-specific proxy settings
-      final result = await _channel.invokeMethod('getSystemProxy');
-      if (result != null && result is Map) {
-        final host = result['host'] as String?;
-        final port = result['port'] as int?;
-        
-        if (host != null && port != null) {
-          return ProxyConfig(host: host, port: port);
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to get system proxy: $e');
-    }
-
-    return null;
-  }
-
   /// Get Android system proxy settings only (without fallback)
   static Future<ProxyConfig?> getAndroidSystemProxy() async {
     if (!Platform.isAndroid) {
