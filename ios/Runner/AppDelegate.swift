@@ -17,8 +17,6 @@ import Foundation
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if call.method == "getSystemProxy" {
         self.getSystemProxy(result: result)
-      } else if call.method == "getSystemProxyDetails" {
-        self.getSystemProxyDetails(result: result)
       } else if call.method == "getNSURLSessionProxy" {
         self.getNSURLSessionProxy(result: result)
       } else {
@@ -89,29 +87,6 @@ import Foundation
     result(nil)
   }
   
-  private func getSystemProxyDetails(result: @escaping FlutterResult) {
-    // Get system proxy settings using SystemConfiguration framework
-    guard let proxySettings = CFNetworkCopySystemProxySettings()?.takeRetainedValue() as? [String: Any] else {
-      result(["error": "Failed to get CFNetworkCopySystemProxySettings"])
-      return
-    }
-    
-    // Convert all values to strings for safe transmission to Flutter
-    var detailsDict: [String: String] = [:]
-    
-    for (key, value) in proxySettings {
-      let keyStr = String(describing: key)
-      let valueStr = String(describing: value)
-      detailsDict[keyStr] = valueStr
-    }
-    
-    // Add metadata
-    detailsDict["_metadata_total_keys"] = String(proxySettings.count)
-    detailsDict["_metadata_source"] = "CFNetworkCopySystemProxySettings"
-    
-    print("iOS CFNetwork Debug: Returning \(detailsDict.count) settings")
-    result(detailsDict)
-  }
   
   private func getNSURLSessionProxy(result: @escaping FlutterResult) {
     // Get proxy settings from NSURLSessionConfiguration

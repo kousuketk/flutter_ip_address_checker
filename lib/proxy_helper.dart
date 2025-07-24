@@ -76,23 +76,6 @@ class ProxyHelper {
     return null;
   }
 
-  /// Get detailed CFNetwork proxy settings (iOS only)
-  static Future<Map<String, String>?> getCFNetworkProxyDetails() async {
-    if (!Platform.isIOS) {
-      return null;
-    }
-
-    try {
-      final result = await _channel.invokeMethod('getSystemProxyDetails');
-      if (result != null && result is Map) {
-        return Map<String, String>.from(result);
-      }
-    } catch (e) {
-      debugPrint('Failed to get CFNetwork proxy details: $e');
-    }
-
-    return null;
-  }
 
   /// Get NSURLSessionConfiguration proxy settings (iOS only)
   static Future<NSURLSessionProxyInfo?> getNSURLSessionProxy() async {
