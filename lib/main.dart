@@ -61,6 +61,7 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
   bool _showEnvironmentVariables = false;
   Map<String, String> _environmentVariables = {};
   List<String> _executableArguments = [];
+  Map<String, String> _stringFromEnvironmentValues = {};
 
   @override
   void initState() {
@@ -224,9 +225,41 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
 
   /// Get environment variables and executable arguments
   void _loadEnvironmentVariables() {
+    // Use const values that are evaluated at compile time
+    final stringFromEnvValues = <String, String>{
+      'PATH': const String.fromEnvironment('PATH', defaultValue: '(not set)'),
+      'HOME': const String.fromEnvironment('HOME', defaultValue: '(not set)'),
+      'USER': const String.fromEnvironment('USER', defaultValue: '(not set)'),
+      'SHELL': const String.fromEnvironment('SHELL', defaultValue: '(not set)'),
+      'LANG': const String.fromEnvironment('LANG', defaultValue: '(not set)'),
+      'PWD': const String.fromEnvironment('PWD', defaultValue: '(not set)'),
+      'TMPDIR': const String.fromEnvironment('TMPDIR', defaultValue: '(not set)'),
+      'FLUTTER_ROOT': const String.fromEnvironment('FLUTTER_ROOT', defaultValue: '(not set)'),
+      'DART_SDK': const String.fromEnvironment('DART_SDK', defaultValue: '(not set)'),
+      'ANDROID_HOME': const String.fromEnvironment('ANDROID_HOME', defaultValue: '(not set)'),
+      'JAVA_HOME': const String.fromEnvironment('JAVA_HOME', defaultValue: '(not set)'),
+      'DEBUG': const String.fromEnvironment('DEBUG', defaultValue: '(not set)'),
+      'PROFILE': const String.fromEnvironment('PROFILE', defaultValue: '(not set)'),
+      'RELEASE': const String.fromEnvironment('RELEASE', defaultValue: '(not set)'),
+      'FLUTTER_TEST': const String.fromEnvironment('FLUTTER_TEST', defaultValue: '(not set)'),
+      'CI': const String.fromEnvironment('CI', defaultValue: '(not set)'),
+      'GITHUB_ACTIONS': const String.fromEnvironment('GITHUB_ACTIONS', defaultValue: '(not set)'),
+      'GITLAB_CI': const String.fromEnvironment('GITLAB_CI', defaultValue: '(not set)'),
+      'JENKINS_URL': const String.fromEnvironment('JENKINS_URL', defaultValue: '(not set)'),
+      'BUILD_NUMBER': const String.fromEnvironment('BUILD_NUMBER', defaultValue: '(not set)'),
+      'VERSION': const String.fromEnvironment('VERSION', defaultValue: '(not set)'),
+      'APP_ENV': const String.fromEnvironment('APP_ENV', defaultValue: '(not set)'),
+      'NODE_ENV': const String.fromEnvironment('NODE_ENV', defaultValue: '(not set)'),
+      'ENVIRONMENT': const String.fromEnvironment('ENVIRONMENT', defaultValue: '(not set)'),
+      'HOGE1': const String.fromEnvironment('HOGE1', defaultValue: '(not set)'),
+      'HOGE2': const String.fromEnvironment('HOGE2', defaultValue: '(not set)'),
+      'HOGE3': const String.fromEnvironment('HOGE3', defaultValue: '(not set)'),
+    };
+
     setState(() {
       _environmentVariables = Platform.environment;
       _executableArguments = Platform.executableArguments;
+      _stringFromEnvironmentValues = stringFromEnvValues;
       _showEnvironmentVariables = true;
     });
   }
@@ -550,6 +583,89 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
                                     );
                                   }).toList(),
                                 ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                Card(
+                  color: Colors.teal.shade50,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.code, color: Colors.teal),
+                            const SizedBox(width: 8),
+                            Text(
+                              'String.fromEnvironment',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: Colors.teal.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          height: 200,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(8.0),
+                            child: _stringFromEnvironmentValues.isEmpty
+                                ? const Center(
+                                    child: Text(
+                                      'String.fromEnvironmentから取得できる値がありません',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontStyle: FontStyle.italic,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  )
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: _stringFromEnvironmentValues.entries.map((entry) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                        child: RichText(
+                                          text: TextSpan(
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.black,
+                                              fontFamily: 'monospace',
+                                            ),
+                                            children: [
+                                              TextSpan(
+                                                text: '${entry.key}: ',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.blue,
+                                                ),
+                                              ),
+                                              TextSpan(
+                                                text: entry.value,
+                                                style: TextStyle(
+                                                  color: entry.value.startsWith('(empty from String.fromEnvironment')
+                                                      ? Colors.orange
+                                                      : Colors.green,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                          ),
                         ),
                       ],
                     ),
