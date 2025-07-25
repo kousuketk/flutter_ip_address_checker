@@ -56,6 +56,11 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
   String _proxyInfo = '';
   String _androidProxyInfo = '';
   String _iosProxyInfo = '';
+  
+  // Environment variables display
+  bool _showEnvironmentVariables = false;
+  Map<String, String> _environmentVariables = {};
+  List<String> _executableArguments = [];
 
   @override
   void initState() {
@@ -217,48 +222,20 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
     }
   }
 
+  /// Get environment variables and executable arguments
+  void _loadEnvironmentVariables() {
+    setState(() {
+      _environmentVariables = Platform.environment;
+      _executableArguments = Platform.executableArguments;
+      _showEnvironmentVariables = true;
+    });
+  }
 
-
-
-  Widget _buildBooleanRow(String label, dynamic value) {
-    // Handle both boolean and string values (for iOS < 13.0 compatibility)
-    String displayText;
-    IconData iconData;
-    Color iconColor;
-    
-    if (value is bool) {
-      displayText = value ? "Enabled" : "Disabled";
-      iconData = value ? Icons.check_circle : Icons.cancel;
-      iconColor = value ? Colors.green : Colors.red;
-    } else if (value is String) {
-      displayText = value;
-      iconData = Icons.info;
-      iconColor = Colors.orange;
-    } else {
-      displayText = "Unknown";
-      iconData = Icons.help;
-      iconColor = Colors.grey;
-    }
-    
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: Row(
-        children: [
-          Icon(
-            iconData,
-            size: 16,
-            color: iconColor,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '$label: $displayText',
-              style: const TextStyle(fontSize: 13),
-            ),
-          ),
-        ],
-      ),
-    );
+  /// Hide environment variables
+  void _hideEnvironmentVariables() {
+    setState(() {
+      _showEnvironmentVariables = false;
+    });
   }
 
   @override
@@ -417,7 +394,169 @@ class _IPAddressCheckerState extends State<IPAddressChecker> {
               ),
               const SizedBox(height: 8),
               
+              // Environment Variables Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _showEnvironmentVariables ? _hideEnvironmentVariables : _loadEnvironmentVariables,
+                  icon: Icon(_showEnvironmentVariables ? Icons.visibility_off : Icons.visibility),
+                  label: Text(_showEnvironmentVariables ? '環境変数を非表示' : '環境変数を表示'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple.shade100,
+                    foregroundColor: Colors.purple.shade700,
+                  ),
+                ),
+              ),
               const SizedBox(height: 16),
+              
+              // Environment Variables Display
+              if (_showEnvironmentVariables) ...[
+                Card(
+                  color: Colors.purple.shade50,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.settings, color: Colors.purple),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Platform.environment',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: Colors.purple.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          height: 200,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: _environmentVariables.entries.map((entry) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                  child: RichText(
+                                    text: TextSpan(
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black,
+                                        fontFamily: 'monospace',
+                                      ),
+                                      children: [
+                                        TextSpan(
+                                          text: '${entry.key}: ',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blue,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: entry.value,
+                                          style: const TextStyle(
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                Card(
+                  color: Colors.orange.shade50,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.terminal, color: Colors.orange),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Platform.executableArguments',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: Colors.orange.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12.0),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: _executableArguments.isEmpty
+                              ? const Text(
+                                  '引数がありません',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.grey,
+                                  ),
+                                )
+                              : Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: _executableArguments.asMap().entries.map((entry) {
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                      child: RichText(
+                                        text: TextSpan(
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.black,
+                                            fontFamily: 'monospace',
+                                          ),
+                                          children: [
+                                            TextSpan(
+                                              text: '[${entry.key}]: ',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blue,
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: entry.value,
+                                              style: const TextStyle(
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               
               // Error message
               if (_errorMessage.isNotEmpty)
